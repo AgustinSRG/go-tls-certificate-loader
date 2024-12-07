@@ -1,4 +1,4 @@
-# Utility library to load TLS certificate (Go)
+# Utility library to load TLS certificate and key (Go)
 
 This is an utility library to load TLS certificate chain and private key from files. It will check for changes in the files periodically and update them, allowing you to set up an auto-renewal process without worrying about restarting the server process.
 
