@@ -54,11 +54,11 @@ func NewTlsCertificateLoader(config TlsCertificateLoaderConfig) (*TlsCertificate
 
 	statKey, err := os.Stat(config.KeyPath)
 
-	keyModTime := statKey.ModTime()
-
 	if err != nil {
 		return nil, err
 	}
+
+	keyModTime := statKey.ModTime()
 
 	certificate, err := tls.LoadX509KeyPair(config.CertificatePath, config.KeyPath)
 
@@ -70,13 +70,16 @@ func NewTlsCertificateLoader(config TlsCertificateLoaderConfig) (*TlsCertificate
 		config:      config,
 		mu:          &sync.Mutex{},
 		closed:      false,
-		closeChan:   make(chan struct{}, 1),
+		closeChan:   nil,
 		certificate: &certificate,
 		certModTime: certModTime,
 		keyModTime:  keyModTime,
 	}
 
-	go loader.run() // Start co-routine
+	if config.CheckReloadPeriod > 0 {
+		loader.closeChan = make(chan struct{}, 1)
+		go loader.run() // Start co-routine
+	}
 
 	return loader, nil
 }
@@ -100,7 +103,7 @@ func (loader *TlsCertificateLoader) Close() {
 
 	loader.mu.Unlock()
 
-	if !wasClosed {
+	if !wasClosed && loader.closeChan != nil {
 		loader.closeChan <- struct{}{}
 	}
 }
@@ -124,14 +127,14 @@ func (loader *TlsCertificateLoader) check() {
 
 	statKey, err := os.Stat(loader.config.KeyPath)
 
-	keyModTime := statKey.ModTime()
-
 	if err != nil {
 		if loader.config.OnError != nil {
 			loader.config.OnError(err)
 		}
 		return
 	}
+
+	keyModTime := statKey.ModTime()
 
 	if keyModTime.UnixMilli() == loader.keyModTime.UnixMilli() && certModTime.UnixMilli() == loader.certModTime.UnixMilli() {
 		// No changes
