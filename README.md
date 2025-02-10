@@ -32,7 +32,7 @@ import (
 
 func main() {
 	// Create the loader
-	loader, err := NewTlsCertificateLoader(TlsCertificateLoaderConfig{
+	loader, err := tls_certificate_loader.NewTlsCertificateLoader(tls_certificate_loader.TlsCertificateLoaderConfig{
 		// Path to the certificate and the key
 		CertificatePath: "/path/to/certificate.pem",
 		KeyPath:         "/path/to/key.pem",
